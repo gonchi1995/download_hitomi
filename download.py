@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import requests, asyncio, os
+import requests, asyncio, os, sys
 
 def remove_list(list):
     
@@ -27,7 +27,7 @@ async def download(url):
         print("Requests Failed\n")
         return False
 
-    directory = url.split("/")[-2]
+    directory = "galleries/" + url.split("/")[-2]
     filename = url.split("/")[-1]
 
     if os.path.exists(directory) == False:
@@ -45,8 +45,10 @@ async def download(url):
          
     await asyncio.sleep(0.3)
     return True
+
+gallery_dir = "galleries/" + sys.argv[1] + "/img_url.txt"
     
-with open("img_url.txt", "r") as f:
+with open(gallery_dir, "r") as f:
     urls = f.read()
 
 url_list = urls.split("\n")
