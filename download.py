@@ -1,70 +1,81 @@
 #!/usr/bin/python3
 
-import requests, asyncio, os, sys
+import concurrent.futures   # For multi thread
+import requests             # For download
+import os                   # For control directory
+import sys                  # For using args
 
-def remove_list(list):
+# Remove downloaded image url from list
+def remove_list(list: list) -> list:
     
-    # confirm "[gallerynum]/clearlist.txt" exists
-    if os.path.exists(list[0].split("/")[-2] + "/" + "clearlist.txt") == False:
-        return list
+    # Confirm existence of "clearlist.txt"
+    if os.path.exists("galleries/%s/clearlist.txt" % (list[0].split("/")[-2])) == False:
+        print("clearlist.txt not exist")
+        return list # "clearlist.txt" not exist
 
-    # read [gallerynumber]/clearlist.txt
-    with open(list[0].split("/")[-2] + "/" + "clearlist.txt", "r") as f:
+    
+    with open("galleries/{}/clearlist.txt".format(list[0].split('/')[-2]), 'r') as f:
         urls = f.read()
-    clear_list = urls.split("\n")   # split by newilne character
-    clear_list.remove("")           # remove blank line
+    clear_list = urls.split('\n')   # Split urllist by newline character
+    clear_list.remove("")           # Remove blank line from clear list
 
-    # remove url that matches urls in clearlist
+    # Remove url that is in clearlist from urllist
     for i in clear_list:
         if i in list:
             list.remove(i)
 
     return list
 
-# download a image
-async def download(url):
-    print("downloading..." + url)
+# Download Images
+def download(url: str) -> bool:
+    print("downloading..." + url)   # Print download
+
+    # Requests Image
     req = requests.get(url)
-
+    
+    # Request is failed
     if req.status_code != 200:
-        print("Requests Failed\n")
-        return False
+       print("Requests Failed\n")
+       return False
+   
+    directory = "galleries/" + url.split('/')[-2]   # Gallery directory
+    filename = url.split('/')[-1]                   # File name
 
-    directory = "galleries/" + url.split("/")[-2]
-    filename = url.split("/")[-1]
-
+    # Make gallery directory
     if os.path.exists(directory) == False:
         os.mkdir(directory)
-        
-    with open(directory + "/" + filename, "wb") as f:
+
+    # Write image data
+    with open(directory+"/"+filename, "wb") as f:
         f.write(req.content)
 
-    if os.path.exists(directory + "/" + "clearlist.txt") == False:
-        with open(directory + "/" + "clearlist.txt", "x") as f:
+    # Add url to clearlist
+    if os.path.exists(directory+"/clearlist.txt") == False:
+        with open(directory+"/clearlist.txt", "x") as f:
             f.write(url+"\n")
     else:
-        with open(directory + "/" + "clearlist.txt", "a") as f:
+        with open(directory+"/clearlist.txt", "a") as f:
             f.write(url+"\n")
-         
-    await asyncio.sleep(0.3)
+
     return True
 
-# gallery directory path  "galleries/[gallerynumber]/"
-gallery_dir = "galleries/" + sys.argv[1] + "/img_url.txt"
-    
-# read urls list
-with open(gallery_dir, "r") as f:
-    urls = f.read()
+# Main
+if __name__ == '__main__':
+    # Directory and File
+    gallery_dir = "galleries/"+sys.argv[1]
+    url_list_file = "img_url.txt"
 
-url_list = urls.split("\n") # split newline character
-url_list.remove("")         # remove blank line from list
+    # Read image url list
+    with open(gallery_dir+"/"+url_list_file, "r") as f:
+        urls = f.read()
 
-url_list = remove_list(url_list)
+    url_list = urls.split("\n") # Split list by newline character
+    url_list.remove("")         # Remove blank line
 
-loop = asyncio.get_event_loop() # async
+    url_list = remove_list(url_list)    # Remove downloaded image url
 
-coros = [download(url) for url in url_list] # coroutines
-futures = asyncio.gather(*coros)
-loop.run_until_complete(futures)
-print(futures.result())
-loop.close()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=25)   # Max thread 100
+    # Execute download
+    for url in url_list:
+        executor.submit(download, url)  # Multi thread
+        #download(url)                  # Single thread
