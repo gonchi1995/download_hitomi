@@ -46,7 +46,7 @@ def list_url(gallerynum: str, subdomain: str) -> bool:
 
     # Make gallery directory
     if os.path.exists(gallery_dir) == False:
-        os.mkdir(gallery_dir)
+        os.makedirs(gallery_dir)
 
     # Write list to file
     with open(gallery_dir + "/img_url.txt", "w") as listfile:
