@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import urllib.request
 import urllib.error
 import argparse
@@ -12,6 +14,7 @@ AA_WEBP = 1
 AA = 2
 BA_WEBP = 3
 BA = 4
+CA = 5
 
 url = "https://aa.hitomi.la/webp/1449630/025.jpg.webp"
 ref_url = "https://hitomi.la/reader/1450055.html"
@@ -21,9 +24,9 @@ def list_url(gallery_url):
     display_url = gallery_url.split("/")
     display_url[3] = "reader"
     display_url = "/".join(display_url)
-    
+
     # HTTPリクエストヘッダセット
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"    
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
     req =urllib.request.Request(display_url)
     req.add_header("User-Agent", user_agent)
 
@@ -39,11 +42,11 @@ def list_url(gallery_url):
     soup = BeautifulSoup(data, "html.parser")
     urllist = soup.findAll("div", class_="img-url")
     urllist = [i.string for i in urllist]
-    
+
     # url_typeを決定する line:35～77 ※改善できそう
     url_type = FAILED
     end_flag = None
-    for head in ["aa", "ba"]:
+    for head in ["aa", "ba", "ca"]:
         # aa.hitomi.la か ba.hitomi.laか
         for ext in ["webp", ""]:
             # webpがつくかつかないか
@@ -75,12 +78,14 @@ def list_url(gallery_url):
                     url_type = BA_WEBP
                 else:
                     url_type = BA
+            elif head == "ca":
+            	url_type = CA
             else:
                 url_type = FAILED
             # 終了フラグを立てる
             end_flag = True
             break;
-        
+
         # 終了フラグが立っている場合は終了する
         if end_flag == True:
             break;
@@ -88,6 +93,7 @@ def list_url(gallery_url):
     # https://xx.hitomi.la…(.webp)の形にする
     urllist2 = list()
     if url_type == FAILED:  # 失敗
+        print("FAILED")
         return None
     elif url_type == AA_WEBP: # aa.hitomi.la….webp
         for url in urllist:
@@ -115,7 +121,13 @@ def list_url(gallery_url):
             url2[0] = "https://ba"
             url2 = ".".join(url2)
             urllist2.append(url2)
-            
+    elif url_type == CA:
+    	for url in urllist:
+    		url2 = url.split(".")
+    		url2[0] = "https://ca"
+    		url2 = ".".join(url2)
+    		urllist2.append(url2)
+
     return urllist2
 
 def download(img_url, ref_url):
@@ -142,7 +154,7 @@ def download(img_url, ref_url):
         # ギャラリーのディレクトリがない場合作成する
         if not os.path.exists("galleries/" + gallery_num):
             os.makedirs("galleries/" + gallery_num, 755)
-        
+
         # ファイル名
         fname = img_url.split("/")[-1]
         ext = fname.split(".")[-1]
@@ -161,7 +173,7 @@ def exec_download(img_url, ref_url):
     print("downloading..." + img_url)
     ret = download(img_url, ref_url)
     return ret
-    
+
 def main():
     # コマンドライン引数設定
     parser = argparse.ArgumentParser(sys.argv[0])
@@ -171,11 +183,12 @@ def main():
 
     # 画像のURLをリスト化
     urllist = list_url(args.url)
+    print(args.url)
 
     # マルチスレッドで画像をダウンロード
-    executor = ThreadPoolExecutor(max_workers=args.t)
+    executor = ThreadPoolExecutor(max_workers=int(args.t))
     futures = [executor.submit(exec_download, url, ref_url) for url in urllist]
 
-    
+
 if __name__ == "__main__":
     main()
