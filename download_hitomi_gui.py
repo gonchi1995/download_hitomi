@@ -16,6 +16,9 @@ FAILED = 0
 AA = 1
 BA = 2
 CA = 3
+READER = 0
+WEBP = 4
+EXT_WEBP = 8
 
 """ 
 def vp_start_gui():
@@ -135,57 +138,89 @@ class DownloaderWindow:
 
         # url_typeを決定する
         url_type = FAILED
+        end_flag = False
         for head in ["aa", "ba", "ca"]:
-            # aa.hitomi.laかba.hitomi.laかca.hitomi.laか
-            sample = urllist[0].split(".")
-            sample[0] = "https://" + head
-            sample = ".".join(sample)
+            for reader in ["reader", "webp"]:
+                for ext in ["webp", ""]:
+                    # aa.hitomi.laかba.hitomi.laかca.hitomi.laか
+                    sample = urllist[0].split(".")
+                    sample[0] = "https://" + head
+                    sample = ".".join(sample)
+                    sample = sample.split("/")
+                    sample[3] = reader
+                    sample = "/".join(sample)
 
-            req = urllib.request.Request(sample)
-            req.add_header("User-Agent", user_agent)
-            req.add_header("Referer", display_url)
+                    if ext == "webp":
+                        sample += ".webp"
 
-            try:
-                ref = urllib.request.urlopen(req)
-            except urllib.error.URLError as e:
-                continue
-        
-            ref.close()
+                    req = urllib.request.Request(sample)
+                    req.add_header("User-Agent", user_agent)
+                    req.add_header("Referer", display_url)
 
-            # ページ取得成功した場合url_typeを決定する
-            if head == "aa":
-                url_type = AA
-            elif head == "ba":
-                url_type = BA
-            elif head == "ca":
-                url_type = CA
-            else:
-                url_type = FAILED
-            
-            # url_typeを決定したのでfor文を抜ける
-            break
+                    try:
+                        ref = urllib.request.urlopen(req)
+                    except urllib.error.URLError as e:
+                        continue
+                
+                    end_flag = True
+                    ref.close()
+
+                    # ページ取得成功した場合url_typeを決定する
+                    if ext == "webp":
+                        url_type = EXT_WEBP
+                    else:
+                        url_type = FAILED
+
+                    if reader == "reader":
+                        url_type |= READER
+                    elif reader == "webp":
+                        url_type |= WEBP
+                    else:
+                        url_type = FAILED
+
+                    if head == "aa":
+                        url_type |= AA
+                    elif head == "ba":
+                        url_type |= BA
+                    elif head == "ca":
+                        url_type |= CA
+                    else:
+                        url_type = FAILED
+                    
+                    # url_typeを決定したのでfor文を抜ける
+                    break
+            if end_flag:
+                break
+
 
         urllist2 = list()
         if url_type == FAILED:  # 失敗
             print("Get URL list FAILED")
             return None
-        elif url_type == AA: # aa.hitomi.la/...
-            for url in urllist:
-                url2 = url.split(".")
-                url2[0] = "https://aa"
-                url2 = ".".join(url2)
-                urllist2.append(url2)
-        elif url_type == BA:
-            for url in urllist:
-                url2 = url.split(".")
-                url2[0] = "https://ba"
-                url2 = ".".join(url2)
-                urllist2.append(url2)
-        elif url_type == CA:
-            for url in urllist:
-                url2 = url.split(".")
-                url2[0] = "https://ca"
-                urllist2.append(url2)
+
+        # URLタイプによってURLを変える
+        if (url_type & 0x03) == AA:
+            url_head = "https://aa"
+        elif (url_type & 0x03) == BA:
+            url_head = "https://ba"
+        else:
+            url_head = "https://ca"
+        
+        if (url_type & 0x04) == WEBP:
+            url_reader = "webp"
+        else:
+            url_reader = "reader"
+
+        for url in urllist:
+            url2 = url.split(".")
+            url2[0] = url_head
+            url2 = ".".join(url2)
+            url2 = url2.split("/")
+            url2[3] = url_reader
+            url2 = "/".join(url2)
+            if (url_type & 0x08) == EXT_WEBP:
+                url2 += ".webp"
+            urllist2.append(url2)
         
         return urllist2
 
