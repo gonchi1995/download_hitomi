@@ -140,7 +140,7 @@ class DownloaderWindow:
         url_type = FAILED
         end_flag = False
         for head in ["aa", "ba", "ca"]:
-            for reader in ["reader", "webp"]:
+            for reader in ["galleries", "webp"]:
                 for ext in ["webp", ""]:
                     # aa.hitomi.laかba.hitomi.laかca.hitomi.laか
                     sample = urllist[0].split(".")
@@ -209,7 +209,7 @@ class DownloaderWindow:
         if (url_type & 0x04) == WEBP:
             url_reader = "webp"
         else:
-            url_reader = "reader"
+            url_reader = "galleries"
 
         for url in urllist:
             url2 = url.split(".")
@@ -284,6 +284,7 @@ class DownloaderWindow:
         self.fail_cnt = 0
         urllist = self.list_url(self.Entry1.get())
         if urllist == None:
+            self.exelog.set("List URL failed")
             return False
         self.img_cnt = len(urllist)
         exec = ThreadPoolExecutor(max_workers=25)
