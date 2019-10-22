@@ -282,6 +282,7 @@ class DownloaderWindow:
     def multi_download(self):
         self.success_cnt = 0
         self.fail_cnt = 0
+        self.exelog.set("Making a list URL")
         urllist = self.list_url(self.Entry1.get())
         if urllist == None:
             self.exelog.set("List URL failed")
