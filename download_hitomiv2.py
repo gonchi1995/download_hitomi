@@ -25,19 +25,32 @@ EXT_WEBP = 8
 JS_USED = 1         # ページにjavascript使用
 JS_NOT_USED = 0     # ページにjavascriptを使用しない
 
+# ギャラリーのトップページが格納されているディレクトリ
+HOME_DIR = "gamecg"
+
+# 画像表示ページのURLを取得
+def get_display_url(gallery_url):
+    url = gallery_url.split("/")[-1]
+    gallery_num = url.split("-")[-1].split(".")[0]
+    gallery_ext = url.split("-")[-1].split(".")[-1]
+
+    display_url = gallery_url.split("/")
+    display_url[3] = display_url[3] = "reader"
+    display_url[4] = gallery_num + "." + gallery_ext
+    display_url = "/".join(display_url)
+
+    return display_url
+
+
 # Referer用URLを取得
 def get_refurl(url):
-    ref_url = url.split("/")
-    ref_url[3] = "reader"
-    ref_url = "/".join(ref_url)
+    ref_url = get_display_url(url)
 
     return ref_url
 
 def chk_disp_page(gallery_url):
     # ギャラリーページのurlから画像表示ページのurlを推測する
-    display_url = gallery_url.split("/")
-    display_url[3] = "reader"
-    display_url = "/".join(display_url)
+    display_url = get_display_url(gallery_url)
 
     user_agent = "Mozilla/5.0"
 
@@ -67,9 +80,7 @@ def chk_disp_page(gallery_url):
 # 画像表示ページから画像URLを取得
 def list_url(gallery_url):
     # ギャラリーページのurlから画像表示ページのurlを推測する
-    display_url = gallery_url.split("/")
-    display_url[3] = "reader"
-    display_url = "/".join(display_url)
+    display_url = get_display_url(gallery_url)
 
     # HTTPリクエストヘッダセット
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
@@ -187,9 +198,7 @@ def list_url2(gallery_url):
     urllist = list()    # URLリスト
 
     # ギャラリーページのurlから画像表示ページのurlを推測する
-    display_url = gallery_url.split("/")
-    display_url[3] = "reader"
-    display_url = "/".join(display_url)
+    display_url = get_display_url(gallery_url)
     display_url = display_url + "#1"
     
     # Chromeを起動
