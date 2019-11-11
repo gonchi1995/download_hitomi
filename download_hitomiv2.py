@@ -28,6 +28,9 @@ JS_NOT_USED = 0     # ページにjavascriptを使用しない
 # ギャラリーのトップページが格納されているディレクトリ
 HOME_DIR = "gamecg"
 
+# ダウンロードリトライ回数
+RETRY = 3
+
 # 画像表示ページのURLを取得
 def get_display_url(gallery_url):
     url = gallery_url.split("/")[-1]
@@ -255,34 +258,37 @@ def download(img_url, ref_url, num):
     req.add_header("Referer", ref_url)
 
     # ダウンロード
-    try:
-        # GETリクエストを飛ばす
-        with urllib.request.urlopen(req) as res:
-            data = res.read()
-    except urllib.error.URLError as e:
-        print(e)
-        return False
-    else:
-        # ギャラリー番号
-        gallery_num = ref_url.split("/")[-1].split(".")[0]
+    for i in range(RETRY):  # リトライ3回
+        try:
+            # GETリクエストを飛ばす
+            with urllib.request.urlopen(req) as res:
+                data = res.read()
+        except urllib.error.URLError as e:
+            print(e)
+            return False
+        else:
+            break
+    
+    # ギャラリー番号
+    gallery_num = ref_url.split("/")[-1].split(".")[0]
 
-        # ギャラリーのディレクトリがない場合作成する
-        if not os.path.exists("galleries/" + gallery_num):
-            os.makedirs("galleries/" + gallery_num, 755)
+    # ギャラリーのディレクトリがない場合作成する
+    if not os.path.exists("galleries/" + gallery_num):
+        os.makedirs("galleries/" + gallery_num, 755)
 
-        # ファイル名
-        fname = img_url.split("/")[-1]
-        ext = fname.split(".")[-1]
-        if ext == "webp":
-            ext = fname.split(".")[-2]
-        
-        fname = str(num) + "." + ext
+    # ファイル名
+    fname = img_url.split("/")[-1]
+    ext = fname.split(".")[-1]
+    if ext == "webp":
+        ext = fname.split(".")[-2]
+    
+    fname = str(num) + "." + ext
 
-        # ファイルに書き込む
-        with open("galleries/" + gallery_num + "/" + fname, "wb") as f:
-            f.write(data)
+    # ファイルに書き込む
+    with open("galleries/" + gallery_num + "/" + fname, "wb") as f:
+        f.write(data)
 
-        return True
+    return True
 
 # ダウンロード実行用関数
 def exec_download(img_url, ref_url, num):
